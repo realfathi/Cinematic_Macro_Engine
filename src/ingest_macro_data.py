@@ -1,5 +1,6 @@
 import pandas as pd
 import wbgapi as wb
+import os
 
 def fetch_macro_economics():
     """
@@ -81,7 +82,7 @@ def create_events_metadata():
         # --- Pandemics ---
         {"year": 2020, "event_name": "COVID-19 Pandemic Outbreak", "event_type": "Pandemic"},
         
-        # --- Technological Eras (The Tech Eras affecting Attention Spans & Distribution) ---
+        # --- Technological Eras ---
         {"year": 1982, "event_name": "Rise of Home Video (VHS Explosion)", "event_type": "Tech Era"},
         {"year": 1997, "event_name": "DVD Format Introduction & Netflix Founded", "event_type": "Tech Era"},
         {"year": 2005, "event_name": "YouTube Launch (Rise of User-Generated Video)", "event_type": "Tech Era"},
@@ -104,14 +105,68 @@ if __name__ == "__main__":
         # Merge macroeconomic data with historical events using a Left Join on 'year'
         df_merged_external = pd.merge(df_macro, df_events, on='year', how='left')
         
-        # Fill stable years that have no major crisis with 'Stable Period' labels
+        # 1. Fallback for 1970-1990 Unemployment (BLS Data)
+        print("🧠 Injecting official US Bureau of Labor Statistics (BLS) data for 1970-1990 gaps...")
+        bls_unemployment_fallback = {
+            1970: 4.9, 1971: 5.9, 1972: 5.6, 1973: 4.9, 1974: 5.6,
+            1975: 8.5, 1976: 7.7, 1977: 7.1, 1978: 6.1, 1979: 5.8,
+            1980: 7.1, 1981: 7.6, 1982: 9.7, 1983: 9.6, 1984: 7.5,
+            1985: 7.2, 1986: 7.0, 1987: 6.2, 1988: 5.5, 1989: 5.3,
+            1990: 5.6
+        }
+        for year, rate in bls_unemployment_fallback.items():
+            mask = df_merged_external['year'] == year
+            df_merged_external.loc[mask, 'unemployment_rate'] = df_merged_external.loc[mask, 'unemployment_rate'].fillna(rate)
+        
+        # Pre-fill event labels momentarily so we can filter 'Stable Period' accurately
         df_merged_external['event_name'] = df_merged_external['event_name'].fillna('Stable Period')
         df_merged_external['event_type'] = df_merged_external['event_type'].fillna('Stable Period')
+
+        # ---------------------------------------------------------------------
+        # 🔥 THE EXACT FIX: Calculate Benchmark from Last 5 Stable Periods for 2025 Only
+        # ---------------------------------------------------------------------
+        print("📊 Dynamically calculating 2025 baseline from last 5 Stable Periods...")
         
-        # Save the structured external dataset to the raw data folder
+        # Filter for stable years strictly before 2025 that have valid numerical data
+        stable_years_df = df_merged_external[
+            (df_merged_external['event_name'] == 'Stable Period') & 
+            (df_merged_external['year'] < 2025) &
+            (df_merged_external['inflation_rate'].notna()) &
+            (df_merged_external['gdp_growth'].notna()) &
+            (df_merged_external['unemployment_rate'].notna())
+        ].sort_values('year', ascending=False)
+        
+        # Extract the last 5 historical stable records
+        last_5_stable = stable_years_df.head(5)
+        print(f"📋 Benchmark years used for calculation: {last_5_stable['year'].tolist()}")
+        
+        # Calculate historical averages
+        avg_inflation = round(last_5_stable['inflation_rate'].mean(), 14)
+        avg_gdp = round(last_5_stable['gdp_growth'].mean(), 14)
+        avg_unemployment = round(last_5_stable['unemployment_rate'].mean(), 14)
+        
+        print(f"🎯 Calculated Benchmarks -> Inflation: {avg_inflation}%, GDP Growth: {avg_gdp}%, Unemployment: {avg_unemployment}%")
+        
+        # ---------------------------------------------------------------------
+        # Direct Overwrite for 2025 ONLY 
+        # ---------------------------------------------------------------------
+        print("🚀 Applying dynamic benchmarks to 2025 data points exclusively...")
+        df_merged_external.loc[df_merged_external['year'] == 2025, 'inflation_rate'] = avg_inflation
+        df_merged_external.loc[df_merged_external['year'] == 2025, 'gdp_growth'] = avg_gdp
+        df_merged_external.loc[df_merged_external['year'] == 2025, 'unemployment_rate'] = avg_unemployment
+        
+        # ---------------------------------------------------------------------
+        # Save Results
+        # ---------------------------------------------------------------------
+        os.makedirs('data/processed', exist_ok=True)
+        os.makedirs('data/raw', exist_ok=True)
+        
+        df_merged_external.to_csv('data/processed/macro_historical_dataset.csv', index=False)
         df_merged_external.to_csv('data/raw/macro_historical_dataset.csv', index=False)
-        print("\n🎉 Phase 0 completed successfully! The file is saved at: `data/raw/macro_historical_dataset.csv`")
-        print("\n📝 Sample of the final merged dataset:")
-        print(df_merged_external.loc[df_merged_external['event_type'] != 'Stable Period'].head(10))
+        
+        print("\n🎉 Phase 0 completed dynamically! 2025 is fully populated.")
+        print("💾 File saved at: `data/processed/macro_historical_dataset.csv`")
+        print("\n📝 Verification preview for the final years:")
+        print(df_merged_external.tail(5))
     else:
         print("⚠️  Skipping merge since macroeconomic data fetch failed.")
