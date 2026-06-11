@@ -20,8 +20,9 @@ This platform was built to scientifically test and prove/disprove four core soci
 
 * **Language:** Python 3.14 (Pandas, NumPy, Requests, Scikit-Learn, Statsmodels, Seaborn, Matplotlib)
 * **External APIs:** World Bank Open Data API (`wbgapi`), Open Movie Database API (`OMDb`)
-* **Database / Data Warehouse:** PostgreSQL (Advanced SQL, Window Functions, CTEs, CASE Statements, Extensions)
-* **Orchestration & ETL:** Custom modular Python Ingestion & Processing Scripts
+* **Database / Data Warehouse:** Microsoft SQL Server (T-SQL, Window Functions, CTEs)
+* **Orchestration & ETL:** Custom modular Python Ingestion & Processing Scripts (Ingestion, Cleaning, Mapping, Bulk Loading)
+* **ORMs & Connectors:** SQLAlchemy, pyodbc
 * **Business Intelligence / UI:** Streamlit Interactive Dashboard
 * **Version Control:** Git / GitHub (Adhering to Conventional Commits standard)
 
@@ -30,3 +31,9 @@ This platform was built to scientifically test and prove/disprove four core soci
 ## 📐 Data Warehouse Architecture & Schema (Star Schema)
 
 The PostgreSQL analytical warehouse follows Ralph Kimball’s robust dimensional modeling principles, deploying a **Star Schema** designed for maximum query efficiency, performance, and clear separations of concerns.
+
+* **fact_box_office (The Core Engine):** Stores measurable quantitative data (Budget, Revenue, Calculated ROI, IMDb Ratings, Vote Counts).
+* **dim_movies:** Metadata describing the product (Movie ID, Title, Genres, Runtime).
+* **dim_macroeconomics:** Yearly economic snapshots (GDP Growth Rate, Inflation Rate, Unemployment Rate).
+* **dim_geopolitical_events:** Maps years to specific socio-political climates, defaulting to 'Stable Period' safely for anomaly detection.
+* **dim_date:** Temporal dimension for decade-over-decade aggregations and timeline analysis.
