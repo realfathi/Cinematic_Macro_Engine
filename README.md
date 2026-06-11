@@ -37,3 +37,5 @@ The PostgreSQL analytical warehouse follows Ralph Kimball’s robust dimensional
 * **dim_macroeconomics:** Yearly economic snapshots (GDP Growth Rate, Inflation Rate, Unemployment Rate).
 * **dim_geopolitical_events:** Maps years to specific socio-political climates, defaulting to 'Stable Period' safely for anomaly detection.
 * **dim_date:** Temporal dimension for decade-over-decade aggregations and timeline analysis.
+
+## 🚀 Key Data Engineering Achievements
