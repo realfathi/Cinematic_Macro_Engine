@@ -1,2 +1,5 @@
 # Ignore raw data files that should not be committed
 /data/raw/
+/src/testdb.py
+.env
+/src/__pycache__
