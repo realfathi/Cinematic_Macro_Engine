@@ -26,6 +26,10 @@ print("🚀 Loading datasets into memory...")
 df_master = pd.read_csv(master_csv_path)
 df_macro_src = pd.read_csv(macro_csv_path)
 
+# Ensure proper data types and filter out movies with insufficient votes
+df_master['imdb_votes'] = pd.to_numeric(df_master['imdb_votes'], errors='coerce').fillna(0)
+df_master = df_master[df_master['imdb_votes'] >= 1000]
+
 # Ensure proper data types
 df_master['year'] = df_master['year'].fillna(0).astype(int)
 df_macro_src['year'] = df_macro_src['year'].astype(int)
@@ -60,11 +64,12 @@ dim_macro_df = dim_macro_df[~dim_macro_df['year'].isin(existing_macro)]
 if not dim_macro_df.empty:
     dim_macro_df.to_sql('dim_macroeconomics', engine, if_exists='append', index=False)
 
-# --- C. Populate dim_movies (تم إزالة original_language بالكامل) ---
+# --- C. Populate dim_movies ---
 print("📦 Populating dim_movies...")
-dim_movies_df = df_master[['id', 'title', 'genres', 'runtime']].rename(
+dim_movies_df = df_master[['id', 'title', 'genres', 'runtime', 'overview']].rename(
     columns={'id': 'movie_id', 'genres': 'genre'}
 ).drop_duplicates(subset=['movie_id'])
+dim_movies_df['overview'] = dim_movies_df['overview'].fillna('')
 
 existing_movies = pd.read_sql("SELECT movie_id FROM dim_movies", engine)['movie_id']
 dim_movies_df = dim_movies_df[~dim_movies_df['movie_id'].isin(existing_movies)]
@@ -93,11 +98,12 @@ if not events_df.empty:
 print("🔥 Mapping and Populating fact_box_office (The Core Engine)...")
 
 movies_lookup = pd.read_sql("SELECT movie_key, movie_id FROM dim_movies", engine).set_index('movie_id')['movie_key'].to_dict()
-macro_lookup = pd.read_sql("SELECT macro_key, year FROM dim_macroeconomics", engine).set_index('year')['macro_key'].to_dict()
-valid_event_years = set(pd.read_sql("SELECT event_year FROM dim_geopolitical_events", engine)['event_year'])
-
 fact_records = []
 skipped = 0
+
+df_master['imdb_rating'] = pd.to_numeric(df_master['imdb_rating'], errors='coerce')
+C = df_master['imdb_rating'].mean()
+m = 1000
 
 for _, row in df_master.iterrows():
     m_id = int(row['id'])
@@ -108,29 +114,29 @@ for _, row in df_master.iterrows():
         continue
         
     movie_key = movies_lookup.get(m_id)
-    macro_key = macro_lookup.get(yr)
-    
-    if movie_key is None or macro_key is None:
+
+    if movie_key is None:
         skipped += 1
         continue
     
     bgt = float(row['budget']) if pd.notna(row['budget']) else 0.0
     rev = float(row['revenue']) if pd.notna(row['revenue']) else 0.0
     calculated_roi = ((rev - bgt) / bgt) if bgt > 0 else 0.0
-        
+    
+    R = 0.0 if pd.isna(row['imdb_rating']) else float(row['imdb_rating'])
+    v = 0 if pd.isna(row['imdb_votes']) else int(row['imdb_votes'])
+  
+    pop_score = round((v / (v + m) * R) + (m / (v + m) * C), 3) if (v + m) > 0 else 0.0 
+     
     fact_records.append({
         "movie_key": movie_key,
-        "date_key": yr,
-        "macro_key": macro_key,
-        "event_year_key": yr if yr in valid_event_years else None,
+        "date_key": yr, 
         "budget": int(bgt),
         "revenue": int(rev),
         "roi": calculated_roi,
-        
-        "vote_average": 0.0 if pd.isna(row['imdb_rating']) else float(row['imdb_rating']),
-        "vote_count": 0 if pd.isna(row['imdb_votes']) else int(row['imdb_votes']),
-        
-        "popularity": 0.0
+        "vote_average": R,
+        "vote_count": v,
+        "popularity": pop_score
     })
 
 fact_df = pd.DataFrame(fact_records)
