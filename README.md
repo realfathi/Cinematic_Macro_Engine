@@ -10,6 +10,21 @@ Instead of treating movie data as isolated metrics, this project establishes a *
 
 ---
 
+## 📸 Dashboard Preview
+
+![Dashboard Demo Video](assets/Cinematic%20Macro%20Engine.mp4)
+
+### Executive Snapshot
+![Executive Snapshot](assets/screencapture-localhost-5173-2026-06-30-23_28_59.png)
+
+### Structural & Runtime Trends
+![Structural Trends](assets/screencapture-localhost-5173-structural-2026-06-30-23_29_40.png)
+
+### Macro & Crisis Impact
+![Macro Impact](assets/screencapture-localhost-5173-macro-2026-06-30-23_29_13.png)
+
+---
+
 ## 🚀 Key Features & Analytics
 
 The frontend provides an interactive, glassmorphic dashboard separated into three core analytical views:
@@ -50,6 +65,15 @@ The analytical data warehouse follows robust dimensional modeling principles, us
 * **dim_macroeconomics:** Yearly economic snapshots (GDP Growth Rate, Inflation Rate, Unemployment Rate).
 * **dim_geopolitical_events:** Maps years to specific socio-political climates.
 * **dim_date:** Temporal dimension for decade-over-decade aggregations and timeline analysis.
+
+---
+
+## 📋 Prerequisites
+
+Before you begin, ensure you have the following installed:
+- **Python 3.9+**
+- **Node.js (v18+)** & **npm**
+- **SQL Database** (MySQL, PostgreSQL, or SQLite)
 
 ---
 
