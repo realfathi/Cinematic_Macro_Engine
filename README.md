@@ -12,8 +12,6 @@ Instead of treating movie data as isolated metrics, this project establishes a *
 
 ## 📸 Dashboard Preview
 
-![Dashboard Demo Video](assets/Cinematic%20Macro%20Engine.mp4)
-
 ### Executive Snapshot
 ![Executive Snapshot](assets/screencapture-localhost-5173-2026-06-30-23_28_59.png)
 
